@@ -1,0 +1,48 @@
+name: Daily News Digest
+
+on:
+  schedule:
+    # Run every day at 07:00 UTC
+    - cron: "0 7 * * *"
+  workflow_dispatch:
+    inputs:
+      categories:
+        description: "Comma-separated news categories (e.g. technology,science)"
+        required: false
+        default: "general"
+      country:
+        description: "2-letter country code for top headlines (e.g. us, gb)"
+        required: false
+        default: "us"
+
+jobs:
+  digest:
+    name: Fetch & Summarize News
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run daily news digest
+        env:
+          NEWS_API_KEY: ${{ secrets.NEWS_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          GOOGLE_DOCUMENT_ID: ${{ secrets.GOOGLE_DOCUMENT_ID }}
+          NEWS_LANGUAGE: "en"
+          NEWS_CATEGORIES: ${{ inputs.categories || 'general' }}
+          NEWS_COUNTRY: ${{ inputs.country || 'us' }}
+          OPENAI_MODEL: "gpt-4o-mini"
+        run: python scheduler.py
